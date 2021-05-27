@@ -19,9 +19,9 @@ spec:
         # For prometheus discovery
         avalanche/scrape: "true"
     spec:
-      # Only deploy on this node group, see eksctl.yaml
+      # Only deploy on nodes with this label, see eksctl.yaml
       nodeSelector:
-        eks.amazonaws.com/nodegroup: t3medium
+        avalanche: yep
       containers:
       - name: avalanche
         # They don't seem to have version numbers...

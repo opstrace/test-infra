@@ -98,9 +98,9 @@ spec:
     spec:
       # For k8s target discovery
       serviceAccount: agent
-      # Only deploy on this node group, see eksctl.yaml
+      # Only deploy on nodes with this label, see eksctl.yaml
       nodeSelector:
-        eks.amazonaws.com/nodegroup: r54xlarge
+        prometheus: yep
       containers:
       - name: prometheus
         image: prom/prometheus:v2.26.0

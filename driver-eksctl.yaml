@@ -1,6 +1,8 @@
 # Cluster for launching a bunch of small nodes with avalanche+prometheus
 # Create new cluster with:
-#   eksctl create cluster -f eksctl.yaml
+#   eksctl create cluster -f driver-eksctl.yaml
+# After adding a nodegroup to this file, deploy it to an existing cluster with:
+#   eksctl create nodegroup -f driver-eksctl.yaml
 # Get kubeconfig with:
 #   aws eks update-kubeconfig --region us-west-1 --name nick-scaletest-driver --kubeconfig ~/.kube/outpath
 # Scale a nodegroup with:
@@ -17,10 +19,14 @@ managedNodeGroups:
 # avalanche on lots of small nodes
 - name: t3medium
   instanceType: t3a.medium # 2cpu, 2gmem, 10% discount on AMD CPU
-  desiredCapacity: 10 # scale up after successful deploy
+  desiredCapacity: 300
   volumeSize: 10
+  labels:
+    avalanche: yep # referenced by nodeSelector in avalanche deployment
 # prometheus instances on small number of large nodes
-- name: r54xlarge
+- name: r54xlargeb
   instanceType: r5a.4xlarge # 16cpu, 128gmem, 10% discount on AMD CPU
-  desiredCapacity: 5 # scale up after successful deploy
+  desiredCapacity: 5
   volumeSize: 10
+  labels:
+    prometheus: yep # referenced by nodeSelector in prom deployment

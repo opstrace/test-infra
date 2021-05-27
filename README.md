@@ -16,7 +16,7 @@ Sample benchmark [scenario](https://github.com/cortexproject/cortex/issues/3753)
 
 1. Create cluster in `us-west-2`
 
-> ./opstrace create aws opstrace-scale-test-$USER --log-level debug -c ./cluster-opstrace/cluster.yaml --write-kubeconfig-file ~/.kube/config-opstrace
+> ./opstrace create aws opstrace-scale-test-$USER --log-level debug -c ./opstrace-cluster.yaml --write-kubeconfig-file ~/.kube/config-opstrace
 
 2. Add people to opstrace cluster via UI
 
@@ -24,7 +24,7 @@ Sample benchmark [scenario](https://github.com/cortexproject/cortex/issues/3753)
 
 1. Create driver cluster (initially "just" 10 nodes) in `us-west-1` (intentionally spanning regions for a bit more accuracy)
 
-> eksctl create cluster -f ./cluster-driver/eksctl.yaml
+> eksctl create cluster -f ./driver-eksctl.yaml
 
 2. Scale up driver cluster
 
@@ -37,13 +37,13 @@ In the test we have N avalanche instances being polled by M prometheus instances
 
 1. Deploy [avalanche](https://github.com/open-fresh/avalanche) instances into driver cluster. Could someday try cortex-tools' [benchtool](https://github.com/grafana/cortex-tools/blob/main/docs/benchtool.md) since it has richer metric type support, but it only has [basic auth](https://github.com/grafana/cortex-tools/blob/main/pkg/bench/query_runner.go#L185)
 
-> kubectl apply -f ./cluster-driver/kube-avalanche.yaml
+> kubectl apply -f ./driver-kube-avalanche.yaml
 
 2. Deploy per-tenant prometheus instances into driver cluster (will send data to `$TENANT` in opstrace cluster):
 
 > CLUSTER_NAME=nick-nine-nodes
 > TENANT=default
-> sed "s/__AUTH_TOKEN__/$(cat tenant-api-token-$TENANT)/g" ./cluster-driver/kube-prom.yaml.template | sed "s/__CLUSTER_NAME__/$CLUSTER_NAME/g" | sed "s/__TENANT__/$TENANT/g" | kubectl apply -f -
+> sed "s/__AUTH_TOKEN__/$(cat tenant-api-token-$TENANT)/g" ./driver-kube-prom.yaml.template | sed "s/__CLUSTER_NAME__/$CLUSTER_NAME/g" | sed "s/__TENANT__/$TENANT/g" | kubectl apply -f -
 
 3. Check prometheus dashboard
 
