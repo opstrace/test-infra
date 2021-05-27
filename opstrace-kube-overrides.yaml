@@ -1,9 +1,6 @@
-# Manually increase the limits on series counts, otherwise we quickly see HTTP 400 errors, paired with messages like the following in ingester pods:
-#
-#   per-user series limit of 5000000 exceeded, please contact administrator to raise it (local limit: 5000000 global limit: 10000000 actual local limit: 3333333)
-#
-# The following increases those limits by 100x.
-# Note: it takes ~10mins for the ingester statefulset to roll out the change
+# Manually increase some ingester limits, otherwise we will see HTTP errors, paired with error messages in cortex pods.
+# NOTE 1: May need to manually "kubectl delete pod -n kube-system opstrace-controller-..." for the change to kick in
+# NOTE 2: it takes ~20mins for the ingester statefulset to roll out the change
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -13,5 +10,12 @@ data:
   # Overrides to the cortex/cortex-config configmap in the opstrace cluster
   cortex: |
     limits:
-      max_global_series_per_user: 1000000000
-      max_series_per_user: 500000000
+      # These two series limits VERY QUICKLY result in HTTP 400 errors paired with this ingester error:
+      #  per-user series limit of 5000000 exceeded, please contact administrator to raise it (local limit: 5000000 global limit: 10000000 actual local limit: 3333333)
+      # Here we increase the limits by 100x from the default controller values
+      max_global_series_per_user: 1000000000 # controller: 10000000
+      max_series_per_user: 500000000 # controller: 5000000
+      # If we go even further, we start seeing another bottleneck: HTTP 503 errors paired with this distributor error:
+      #  ingestion rate limit (100000) exceeded while adding 2000 samples and 0 metadata
+      # Here we increase the limit by 100x from the default controller value
+      ingestion_rate: 100000000 # controller: 100000, default: 25000
