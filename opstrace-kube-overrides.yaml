@@ -1,0 +1,17 @@
+# Manually increase the limits on series counts, otherwise we quickly see HTTP 400 errors, paired with messages like the following in ingester pods:
+#
+#   per-user series limit of 5000000 exceeded, please contact administrator to raise it (local limit: 5000000 global limit: 10000000 actual local limit: 3333333)
+#
+# The following increases those limits by 100x.
+# Note: it takes ~10mins for the ingester statefulset to roll out the change
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opstrace-controller-config-overrides
+  namespace: default
+data:
+  # Overrides to the cortex/cortex-config configmap in the opstrace cluster
+  cortex: |
+    limits:
+      max_global_series_per_user: 1000000000
+      max_series_per_user: 500000000

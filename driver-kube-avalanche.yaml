@@ -7,7 +7,7 @@ kind: Deployment
 metadata:
   name: avalanche
 spec:
-  replicas: 1 # start small then scale once working
+  replicas: 5
   selector:
     matchLabels:
       name: avalanche
@@ -45,3 +45,6 @@ spec:
         ports:
         - name: metrics
           containerPort: 9001
+        resources:
+          requests:
+            memory: 500Mi # no idea what a good number is, just want to set a cap that doesn't OOM

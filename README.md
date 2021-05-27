@@ -18,7 +18,11 @@ Sample benchmark [scenario](https://github.com/cortexproject/cortex/issues/3753)
 
 > ./opstrace create aws opstrace-scale-test-$USER --log-level debug -c ./opstrace-cluster.yaml --write-kubeconfig-file ~/.kube/config-opstrace
 
-2. Add people to opstrace cluster via UI
+2. Apply cortex config overrides (increase series limits)
+
+> kubectl apply -f opstrace-kube-overrides.yaml
+
+3. Add people to opstrace cluster via UI
 
 ### Driver cluster
 
@@ -43,16 +47,11 @@ In the test we have N avalanche instances being polled by M prometheus instances
 
 > CLUSTER_NAME=nick-nine-nodes
 > TENANT=default
-> sed "s/__AUTH_TOKEN__/$(cat tenant-api-token-$TENANT)/g" ./driver-kube-prom.yaml.template | sed "s/__CLUSTER_NAME__/$CLUSTER_NAME/g" | sed "s/__TENANT__/$TENANT/g" | kubectl apply -f -
+> sed "s/__AUTH_TOKEN__/$(cat tenant-api-token-$TENANT)/g" ./driver-kube-prom.template.yaml | sed "s/__CLUSTER_NAME__/$CLUSTER_NAME/g" | sed "s/__TENANT__/$TENANT/g" | kubectl apply -f -
 
-3. Check prometheus dashboard
+3. (optional) Check prometheus dashboard
 
 > kubectl port-forward deployments/tenant-prometheus-$TENANT ui
-
-4. Scale things up once they look good (saves time on redeploying if tweaks are needed):
-
-> kubectl scale deployments/avalanche --replicas=300
-> kubectl scale deployments/tenant-prometheus-$TENANT --replicas=5
 
 EACH prometheus instance will be scraping ALL avalanche instances: Nprometheus * Navalanche
 

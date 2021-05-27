@@ -51,6 +51,11 @@ data:
     - url: "https://cortex.@@TENANT@@.@@CLUSTER_NAME@@.opstrace.io/api/v1/push"
       authorization:
         credentials_file: /var/run/tenant-auth/token
+      queue_config:
+        # some tweaks to reduce load on /push?:
+        max_samples_per_send: 2000 # default 500
+        min_backoff: 100ms # default 30ms
+        max_backoff: 1000ms # default 100ms
     scrape_configs:
     - job_name: "avalanche"
       scrape_interval: 60s
@@ -87,7 +92,7 @@ kind: Deployment
 metadata:
   name: tenant-prometheus-__TENANT__
 spec:
-  replicas: 1 # start small then scale once working
+  replicas: 5
   selector:
     matchLabels:
       name: prometheus
