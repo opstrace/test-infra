@@ -7,7 +7,7 @@ kind: Deployment
 metadata:
   name: avalanche
 spec:
-  replicas: 5
+  replicas: 25
   selector:
     matchLabels:
       name: avalanche
