@@ -1,0 +1,26 @@
+# Cluster for launching a bunch of small nodes with avalanche+prometheus
+# Create new cluster with:
+#   eksctl create cluster -f eksctl.yaml
+# Get kubeconfig with:
+#   aws eks update-kubeconfig --region us-west-1 --name nick-scaletest-driver --kubeconfig ~/.kube/outpath
+# Scale a nodegroup with:
+#   COUNT=10
+#   eksctl scale nodegroup -r us-west-1 --cluster nick-scaletest-driver -n t3medium --nodes $COUNT --nodes-min $COUNT --nodes-max $COUNT
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: nick-scaletest-driver
+  region: us-west-1
+
+managedNodeGroups:
+# avalanche on lots of small nodes
+- name: t3medium
+  instanceType: t3a.medium # 2cpu, 2gmem, 10% discount on AMD CPU
+  desiredCapacity: 10 # scale up after successful deploy
+  volumeSize: 10
+# prometheus instances on small number of large nodes
+- name: r54xlarge
+  instanceType: r5a.4xlarge # 16cpu, 128gmem, 10% discount on AMD CPU
+  desiredCapacity: 5 # scale up after successful deploy
+  volumeSize: 10

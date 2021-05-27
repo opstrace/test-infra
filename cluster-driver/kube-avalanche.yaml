@@ -1,0 +1,47 @@
+# Avalanche docs: https://blog.freshtracks.io/load-testing-prometheus-metric-ingestion-5b878711711c
+# Example series math:
+#   metric-count=2000 * series-count=100 = 200k distinct series per avalanche instance
+#   distinct-series=200k * nodes=500 = 100M distinct series across per-node avalanche instances
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: avalanche
+spec:
+  replicas: 1 # start small then scale once working
+  selector:
+    matchLabels:
+      name: avalanche
+  template:
+    metadata:
+      labels:
+        name: avalanche
+      annotations:
+        # For prometheus discovery
+        avalanche/scrape: "true"
+    spec:
+      # Only deploy on this node group, see eksctl.yaml
+      nodeSelector:
+        eks.amazonaws.com/nodegroup: t3medium
+      containers:
+      - name: avalanche
+        # They don't seem to have version numbers...
+        # See also https://quay.io/repository/freshtracks.io/avalanche?tag=latest&tab=tags
+        image: quay.io/freshtracks.io/avalanche:master-2020-12-28-0c1c64c
+        imagePullPolicy: IfNotPresent
+        args:
+        # number of metric names
+        - --metric-count=2000
+        # number of distinct series PER METRIC
+        - --series-count=100
+        # number of labels in each series
+        - --label-count=10
+        # period in seconds between value updates in each series
+        - --value-interval=30
+        # period in seconds between metric name updates: 7 days (arbitrarily large)
+        # for testing series creation and termination perf
+        - --metric-interval=604800
+        # period in seconds between 'series_id' updates: 24 hours (arbitrarily large)
+        - --series-interval=86400
+        ports:
+        - name: metrics
+          containerPort: 9001

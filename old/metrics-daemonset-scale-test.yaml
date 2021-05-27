@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: avalanche
+spec:
+  minReadySeconds: 60
+  selector:
+    matchLabels:
+      name: avalanche
+  template:
+    metadata:
+      annotations:
+        avalanche/scrape: "true"
+      labels:
+        name: avalanche
+    spec:
+      containers:
+        - args:
+            - --metric-count=2000
+            - --series-count=100
+            - --label-count=10
+            - --value-interval=30
+            - --metric-interval=604800 #every 7 days
+            - --series-interval=86400 # every 24 hours (new)
+          image: quay.io/freshtracks.io/avalanche:latest
+          imagePullPolicy: IfNotPresent
+          name: avalanche-metrics
+          ports:
+            - containerPort: 9001
+              hostPort: 9001
+              name: metrics
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 4
+              memory: 8Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+      serviceAccount: prom-agent
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+      volumes:
+        - configMap:
+            name: prom-agent
+          name: prom-agent
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 5

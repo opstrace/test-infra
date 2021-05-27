@@ -1,0 +1,7 @@
+# cli binary:
+opstrace
+
+# cli output upon creating clusters:
+opstrace*.log
+tenant-api-token-*
+*.jwt
