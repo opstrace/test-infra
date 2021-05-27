@@ -1,5 +1,11 @@
 # Benchmark guide
 
+How this works:
+- `opstrace` cluster with 9 big nodes (see `opstrace-*.yaml` for configs)
+- eks `driver` cluster with 5 himem nodes for 5 `prometheus` instances, and 25 medium nodes for `avalanche` instances (see `driver-*.yaml` for configs)
+- the `prometheus` instances EACH scrape ALL of the `avalanche` instances, but each prometheus appends its pod name to the labels to ensure that each is treated as a distinct set of data. so the resulting metrics are Nprometheus * Navalanche
+- the `prometheus` instances in the `driver` cluster are configured to `remote_write` to the `opstrace` cluster
+
 Sample benchmark [scenario](https://github.com/cortexproject/cortex/issues/3753):
 - 9 tenants, each doing around 42M active series
 - overall 381M active series with 6M datapoint/s => 360M datapoint/min (so ~60s between updates)

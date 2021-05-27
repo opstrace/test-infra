@@ -1,6 +1,6 @@
 # Manually increase some ingester limits, otherwise we will see HTTP errors, paired with error messages in cortex pods.
 # NOTE 1: May need to manually "kubectl delete pod -n kube-system opstrace-controller-..." for the change to kick in
-# NOTE 2: it takes ~20mins for the ingester statefulset to roll out the change
+# NOTE 2: It can take 20mins to 1hr for the ingester statefulset to roll out the change
 apiVersion: v1
 kind: ConfigMap
 metadata:
