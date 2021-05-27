@@ -13,8 +13,10 @@ Sample benchmark [scenario](https://github.com/cortexproject/cortex/issues/3753)
 
 ## Install prerequisites
 
-> curl -L https://opstrace-ci-main-artifacts.s3-us-west-2.amazonaws.com/cli/main/latest/opstrace-cli-linux-amd64-latest.tar.bz2 | tar xjf -
-> sudo pacman -S eksctl
+```
+curl -L https://opstrace-ci-main-artifacts.s3-us-west-2.amazonaws.com/cli/main/latest/opstrace-cli-linux-amd64-latest.tar.bz2 | tar xjf -
+sudo pacman -S eksctl
+```
 
 ## Deploy clusters
 
@@ -22,24 +24,30 @@ Sample benchmark [scenario](https://github.com/cortexproject/cortex/issues/3753)
 
 1. Create cluster in `us-west-2`
 
-> ./opstrace create aws opstrace-scale-test-$USER --log-level debug -c ./opstrace-cluster.yaml --write-kubeconfig-file ~/.kube/config-opstrace
+```
+./opstrace create aws opstrace-scale-test-$USER \
+  --log-level debug \
+  -c ./opstrace-cluster.yaml \
+  --write-kubeconfig-file ~/.kube/config-opstrace
+```
 
 2. Apply cortex config overrides (increase series limits)
 
-> kubectl apply -f opstrace-kube-overrides.yaml
+```
+kubectl apply -f opstrace-kube-overrides.yaml
+```
 
 3. Add people to opstrace cluster via UI
 
 ### Driver cluster
 
-1. Create driver cluster (initially "just" 10 nodes) in `us-west-1` (intentionally spanning regions for a bit more accuracy)
+1. Create driver cluster in `us-west-1`
 
-> eksctl create cluster -f ./driver-eksctl.yaml
+```
+eksctl create cluster -f ./driver-eksctl.yaml
+```
 
-2. Scale up driver cluster
-
-> COUNT=10
-> eksctl scale nodegroup -r us-west-1 --cluster nick-scaletest-driver -n t3amedium --nodes $COUNT --nodes-min $COUNT --nodes-max $COUNT
+If there are problems, take a look at the CloudFormation dashboard first - eksctl is a thin veneer over some CF templates
 
 ## Start testing
 
@@ -47,17 +55,26 @@ In the test we have N avalanche instances being polled by M prometheus instances
 
 1. Deploy [avalanche](https://github.com/open-fresh/avalanche) instances into driver cluster. Could someday try cortex-tools' [benchtool](https://github.com/grafana/cortex-tools/blob/main/docs/benchtool.md) since it has richer metric type support, but it only has [basic auth](https://github.com/grafana/cortex-tools/blob/main/pkg/bench/query_runner.go#L185)
 
-> kubectl apply -f ./driver-kube-avalanche.yaml
+```
+kubectl apply -f ./driver-kube-avalanche.yaml
+```
 
 2. Deploy per-tenant prometheus instances into driver cluster (will send data to `$TENANT` in opstrace cluster):
 
-> CLUSTER_NAME=nick-nine-nodes
-> TENANT=default
-> sed "s/__AUTH_TOKEN__/$(cat tenant-api-token-$TENANT)/g" ./driver-kube-prom.template.yaml | sed "s/__CLUSTER_NAME__/$CLUSTER_NAME/g" | sed "s/__TENANT__/$TENANT/g" | kubectl apply -f -
+```
+CLUSTER_NAME=nick-nine-nodes
+TENANT=default
+sed "s/__AUTH_TOKEN__/$(cat tenant-api-token-$TENANT)/g" ./driver-kube-prom.template.yaml | \
+  sed "s/__CLUSTER_NAME__/$CLUSTER_NAME/g" | \
+  sed "s/__TENANT__/$TENANT/g" | \
+  kubectl apply -f -
+```
 
 3. (optional) Check prometheus dashboard
 
-> kubectl port-forward deployments/tenant-prometheus-$TENANT ui
+```
+kubectl port-forward deployments/tenant-prometheus-$TENANT ui
+```
 
 EACH prometheus instance will be scraping ALL avalanche instances: Nprometheus * Navalanche
 
