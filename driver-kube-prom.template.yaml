@@ -88,10 +88,11 @@ stringData:
 ---
 
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: tenant-prometheus-__TENANT__
 spec:
+  serviceName: tenant-prometheus-__TENANT__
   replicas: 5
   selector:
     matchLabels:
@@ -106,6 +107,9 @@ spec:
       # Only deploy on nodes with this label, see eksctl.yaml
       nodeSelector:
         prometheus: yep
+      # Ensure the PVC is writable by the prometheus UID
+      securityContext:
+        fsGroup: 65534 # "nobody" gid
       containers:
       - name: prometheus
         image: prom/prometheus:v2.26.0
@@ -113,7 +117,11 @@ spec:
         command:
         - /bin/sh
         - -c
-        - sed "s/@@POD_NAME@@/$POD_NAME/g" /etc/prometheus/prometheus.yml | sed "s/@@CLUSTER_NAME@@/$CLUSTER_NAME/g" | sed "s/@@TENANT@@/$TENANT/g" > /tmp/prometheus.yml && cat /tmp/prometheus.yml && /bin/prometheus --config.file=/tmp/prometheus.yml
+        # - Update config with POD_NAME, CLUSTER_NAME, and TENANT at runtime.
+        #   This allows us to share a single ConfigMap across prometheus deployments.
+        # - Configure storage to point to the PVC, and reduce the storage duration to 3h from default 15d.
+        #   From the docs it sounds like these have to be configured via args, and not via the ConfigMap.
+        - sed "s/@@POD_NAME@@/$POD_NAME/g" /etc/prometheus/prometheus.yml | sed "s/@@CLUSTER_NAME@@/$CLUSTER_NAME/g" | sed "s/@@TENANT@@/$TENANT/g" > /tmp/prometheus.yml && whoami && ls -l /storage && cat /tmp/prometheus.yml && /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/storage --storage.tsdb.retention.time=3h
         env:
         - name: CLUSTER_NAME
           value: __CLUSTER_NAME__
@@ -136,6 +144,8 @@ spec:
         - name: tenant-auth
           mountPath: /var/run/tenant-auth
           readOnly: true
+        - name: storage
+          mountPath: /storage
       volumes:
       - name: config
         configMap:
@@ -143,3 +153,12 @@ spec:
       - name: tenant-auth
         secret:
           secretName: tenant-auth-__TENANT__
+  volumeClaimTemplates:
+  - metadata:
+      name: storage
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 100Gi # arbitrary number that sounds "big enough", can adjust later
