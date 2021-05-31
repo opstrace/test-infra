@@ -94,6 +94,8 @@ metadata:
 spec:
   serviceName: tenant-prometheus-__TENANT__
   replicas: 5
+  # We don't care about sequential deploy ordering - just launch pods in parallel
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       name: prometheus
@@ -119,9 +121,11 @@ spec:
         - -c
         # - Update config with POD_NAME, CLUSTER_NAME, and TENANT at runtime.
         #   This allows us to share a single ConfigMap across prometheus deployments.
-        # - Configure storage to point to the PVC, and reduce the storage duration to 3h from default 15d.
+        # - Delete anything in the persistent volume. If prometheus is restarted due to an OOM, we don't
+        #   care about the prior data, and catching up the WAL wasts time and may just cause another OOM.
+        # - Configure storage to point to the PVC, and reduce the storage duration to 1h from default 15d.
         #   From the docs it sounds like these have to be configured via args, and not via the ConfigMap.
-        - sed "s/@@POD_NAME@@/$POD_NAME/g" /etc/prometheus/prometheus.yml | sed "s/@@CLUSTER_NAME@@/$CLUSTER_NAME/g" | sed "s/@@TENANT@@/$TENANT/g" > /tmp/prometheus.yml && whoami && ls -l /storage && cat /tmp/prometheus.yml && /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/storage --storage.tsdb.retention.time=3h
+        - sed "s/@@POD_NAME@@/$POD_NAME/g" /etc/prometheus/prometheus.yml | sed "s/@@CLUSTER_NAME@@/$CLUSTER_NAME/g" | sed "s/@@TENANT@@/$TENANT/g" > /tmp/prometheus.yml && cat /tmp/prometheus.yml && whoami && ls -l /storage && df -h && rm -rf /storage/* && /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/storage --storage.tsdb.retention.time=1h
         env:
         - name: CLUSTER_NAME
           value: __CLUSTER_NAME__
