@@ -19,3 +19,12 @@ data:
       #  ingestion rate limit (100000) exceeded while adding 2000 samples and 0 metadata
       # Here we increase the limit by 100x from the default controller value
       ingestion_rate: 100000000 # controller: 100000, default: 25000
+    ingester:
+      instance_limits:
+        # Set a cap on how many push requests can be in-flight at a time.
+        # Without this set, one ingester at a time was observed to OOM as pending requests stacked up.
+        # The 200k number is tuned for r5.16xlarge nodes, where OOMing was occurring at around 400k pending requests.
+        # This was weirdly only for one ingester at a time, despite sharding theoretically spreading the work across ingesters evenly.
+        # Meanwhile, once this is set no more backlog seems to appear at all, so maybe the limit helps in other ways?
+        # See also system tenant metric: 'sum(cortex_inflight_requests{route="/cortex.Ingester/Push",service="ingester"}) by (pod)'
+        max_inflight_push_requests: 200000 # controller: unset, default: 0/unlimited
