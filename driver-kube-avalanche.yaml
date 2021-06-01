@@ -2,12 +2,18 @@
 # Example series math:
 #   metric-count=2000 * series-count=100 = 200k distinct series per avalanche instance
 #   distinct-series=200k * nodes=500 = 100M distinct series across per-node avalanche instances
+# We use a StatefulSet solely in order for the pod name to stay constant.
+# This avoids creating a new set of metric series in the test data if the pod is restarted or evicted.
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: avalanche
 spec:
-  replicas: 50
+  serviceName: avalanche
+  replicas: 100
+  # We don't care about sequential deploy ordering - just launch pods in parallel
+  # (Note: no maxUnavailable for StatefulSet config changes yet, see https://github.com/kubernetes/kubernetes/pull/82162 )
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       name: avalanche
