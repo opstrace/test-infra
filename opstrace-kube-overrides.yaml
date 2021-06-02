@@ -21,10 +21,12 @@ data:
       ingestion_rate: 100000000 # controller: 100000, default: 25000
     ingester:
       instance_limits:
+        # WARNING: This limit doesn't actually work! We are using the ingester_v2.go path which doesn't implement support for this limit, so it's ignored
         # Set a cap on how many push requests can be in-flight at a time.
         # Without this set, one ingester at a time was observed to OOM as pending requests stacked up.
         # On r5.16xlarge nodes, OOMing was observed on as few as 121k pending requests, so we go with 20k for now to play it safe.
         # The issue is typically only for one ingester at a time, despite sharding theoretically spreading the work across ingesters evenly.
         # Once this is set the effective throughput ceiling seems to greatly increase, so maybe setting a limit helps performance?
         # See also system tenant metric: 'sum(cortex_inflight_requests{route="/cortex.Ingester/Push",service="ingester"}) by (pod)'
-        max_inflight_push_requests: 20000 # controller: unset, default: 0/unlimited
+        # WARNING: This limit doesn't actually work! We are using the ingester_v2.go path which doesn't implement support for this limit, so it's ignored
+        #max_inflight_push_requests: 20000 # controller: unset, default: 0/unlimited
