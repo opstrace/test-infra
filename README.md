@@ -27,7 +27,7 @@ sudo pacman -S eksctl
 ```
 ./opstrace create aws opstrace-scale-test-$USER \
   --log-level debug \
-  -c ./opstrace-cluster.yaml \
+  -c ./opstrace-cluster-PICKONE.yaml \
   --write-kubeconfig-file ~/.kube/config-opstrace
 ```
 
@@ -44,7 +44,7 @@ kubectl apply -f opstrace-kube-overrides.yaml
 1. Create driver cluster in `us-west-1`
 
 ```
-eksctl create cluster -f ./driver-eksctl.yaml
+eksctl create cluster -f ./driver-eksctl-PICKONE.yaml
 ```
 
 If there are problems, take a look at the CloudFormation dashboard first - eksctl is a thin veneer over some CF templates
@@ -88,8 +88,28 @@ Go to `https://system.yourcluster.opstrace.io/grafana` and check the `Opstrace O
 - Infra section: Want to stay under limits of around 60% CPU and RAM
 - Cluster section: Pay attention to Active Series
 
-TODO: measure per-tenant active series?
-TODO: anything for datapoints/sec?
+
+## Misc cluster operations
+
+Get kubectl config:
+```
+aws eks update-kubeconfig --region CLUSTER-REGION --name CLUSTER-NAME --kubeconfig ~/.kube/outpath
+```
+
+After adding a nodegroup to the file, deploy it to an existing cluster:
+```
+eksctl create nodegroup -f driver-eksctl.yaml
+```
+
+Change nodegroup size:
+```
+COUNT=10
+eksctl scale nodegroup -r us-west-1 --cluster nick-scaletest-driver -n t3medium --nodes $COUNT --nodes-min $COUNT --nodes-max $COUNT
+```
+
+To delete an eksctl nodegroup: Delete the corresponding CloudFormation stack in the AWS dashboard. The nodes will automatically be decommissioned and any resident pods will be moved off of them
+
+To delete an eksctl cluster: Delete all the CloudFormation stacks for the nodegroups, THEN delete the stack for the cluster. Attempts to delete the cluster before the stacks SHOULD fail.
 
 ## See also
 

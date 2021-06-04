@@ -1,19 +1,6 @@
-# Cluster for launching a bunch of small nodes with avalanche+prometheus
-# Create new cluster with:
-#   eksctl create cluster -f driver-eksctl.yaml
-# After adding a nodegroup to this file, deploy it to an existing cluster with:
-#   eksctl create nodegroup -f driver-eksctl.yaml
-# Get kubeconfig with:
-#   aws eks update-kubeconfig --region us-west-1 --name nick-scaletest-driver --kubeconfig ~/.kube/outpath
-# Scale a nodegroup with:
-#   COUNT=10
-#   eksctl scale nodegroup -r us-west-1 --cluster nick-scaletest-driver -n t3medium --nodes $COUNT --nodes-min $COUNT --nodes-max $COUNT
-# Delete a nodegroup:
-#   Delete the corresponding CloudFormation stack in the AWS Dashboard
-#   The nodes will automatically be decommissioned and any resident pods will be moved off of them
-# Delete the cluster:
-#   Delete all nodegroup CF stacks, THEN delete the cluster CF stack
-#   Deleting the cluster CF stack before the node CF stacks SHOULD fail
+# Cluster for launching a bunch of small nodes with avalanche+prometheus.
+# In practice this should get around 200M metrics across 100 avalanches * 10 prometheuses
+# This is meant to be deployed using eksctl. See README.md.
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 
@@ -30,6 +17,9 @@ managedNodeGroups:
 # (apparently mem usage is somehow proportional to the number of prometheuses querying)
 - name: t3medium
   instanceType: t3a.medium # 2cpu, 2gmem, 10% discount on AMD CPU
+  # can fit two avalanches per node if there are ten prometheuses polling them
+  # or four avalanches per node if there are only five prometheuses polling them
+  # (avalanche mem usage seems to be proportional to query rate)
   desiredCapacity: 50
   volumeSize: 10
   labels:
@@ -48,7 +38,8 @@ managedNodeGroups:
 # for >= 100 avalanches, should do this:
 - name: r58xlarge
   instanceType: r5a.8xlarge # 32cpu, 256gmem, 10% discount on AMD CPU
-  desiredCapacity: 10 # can fit one prometheus per node
+  # can fit one prometheus per node, scale this according to the desired number of prometheuses
+  desiredCapacity: 10
   volumeSize: 10
   labels:
     prometheus: yep # referenced by nodeSelector in prom deployment

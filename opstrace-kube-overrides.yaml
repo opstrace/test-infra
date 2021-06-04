@@ -8,6 +8,7 @@ metadata:
   namespace: default
 data:
   # Overrides to the cortex/cortex-config configmap in the opstrace cluster
+  # Merged result is written to /etc/cortex/config.yaml
   cortex: |
     limits:
       # These two series limits VERY QUICKLY result in HTTP 400 errors paired with this ingester error:
@@ -19,14 +20,35 @@ data:
       #  ingestion rate limit (100000) exceeded while adding 2000 samples and 0 metadata
       # Here we increase the limit by 100x from the default controller value
       ingestion_rate: 100000000 # controller: 100000, default: 25000
-    ingester:
-      instance_limits:
-        # WARNING: This limit doesn't actually work! We are using the ingester_v2.go path which doesn't implement support for this limit, so it's ignored
-        # Set a cap on how many push requests can be in-flight at a time.
-        # Without this set, one ingester at a time was observed to OOM as pending requests stacked up.
-        # On r5.16xlarge nodes, OOMing was observed on as few as 121k pending requests, so we go with 20k for now to play it safe.
-        # The issue is typically only for one ingester at a time, despite sharding theoretically spreading the work across ingesters evenly.
-        # Once this is set the effective throughput ceiling seems to greatly increase, so maybe setting a limit helps performance?
-        # See also system tenant metric: 'sum(cortex_inflight_requests{route="/cortex.Ingester/Push",service="ingester"}) by (pod)'
-        # WARNING: This limit doesn't actually work! We are using the ingester_v2.go path which doesn't implement support for this limit, so it's ignored
-        #max_inflight_push_requests: 20000 # controller: unset, default: 0/unlimited
+    # NOTE: DO NOT SET INGESTER LIMITS HERE.
+    # They will be ignored in favor of the runtime configuration (even if that configuration is empty).
+    # Add any ingester limits to cortex-runtime-config below.
+
+---
+
+# Runtime configuration required to set some limits.
+# There's code to set it via the Opstrace app/UI but we just short-circuit and set it directly via kubectl.
+# Schema defined here: https://github.com/cortexproject/cortex/blob/master/pkg/cortex/runtime_config.go#L24
+# Incomplete example here: https://cortexmetrics.io/docs/configuration/arguments/#runtime-configuration-file
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    opstrace: no-update # mark as immutable so controller doesn't overwrite
+  name: cortex-runtime-config
+  namespace: cortex
+data:
+  # Runtime configuration, some settings in the main config are ignored when this is enabled.
+  # Written to /etc/cortex-runtime-cfg/runtime-config.yaml
+  runtime-config.yaml: |
+    ingester_limits:
+      # Set a cap on how many push requests can be in-flight at a time.
+      # Without this set, one ingester at a time was observed to OOM as pending requests stacked up.
+      # On r5.16xlarge nodes, OOMing was observed on as few as 121k pending requests, so we go with 20k for now to play it safe.
+      # The issue is typically only for one ingester at a time, despite sharding theoretically spreading the work across ingesters evenly.
+      # Once this is set the effective throughput ceiling seems to greatly increase, so maybe setting a limit helps performance?
+      # See also system tenant metric:
+      #    sum(cortex_inflight_requests{route="/cortex.Ingester/Push",service="ingester"}) by (pod)
+      # Can validate that this setting is actually working by checking config metrics:
+      #    max(cortex_ingester_instance_limits{limit="max_inflight_push_requests"}) by (pod)
+      max_inflight_push_requests: 20000 # controller: unset, default: 0/unlimited
