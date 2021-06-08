@@ -25,7 +25,7 @@ sudo pacman -S eksctl
 1. Create cluster in `us-west-2`
 
 ```
-./opstrace create aws opstrace-scale-test-$USER \
+./opstrace create aws $USER-$NUMNODES \
   --log-level debug \
   -c ./opstrace-cluster-PICKONE.yaml \
   --write-kubeconfig-file ~/.kube/config-opstrace
@@ -35,13 +35,15 @@ sudo pacman -S eksctl
 
 ```
 kubectl apply -f opstrace-kube-overrides.yaml
+# restart controller pod if it's already running, some overrides are only checked once at startup
+kubectl delete pod -n kube-system opstrace-controller-HASH
 ```
 
 3. Add people to opstrace cluster via UI
 
 ### Driver cluster
 
-1. Create driver cluster in `us-west-1`
+1. Create driver cluster in same region as opstrace cluster
 
 ```
 eksctl create cluster -f ./driver-eksctl-PICKONE.yaml

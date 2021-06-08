@@ -9,4 +9,4 @@ node_count: 18 # same total cpu/mem as 9 x r5.16xlarge
 cert_issuer: letsencrypt-prod
 aws:
   instance_type: r5.8xlarge # 32cpu, 256mem
-  region: us-east-1
+  region: eu-west-3

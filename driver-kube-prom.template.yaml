@@ -93,7 +93,7 @@ metadata:
   name: tenant-prometheus-__TENANT__
 spec:
   serviceName: tenant-prometheus-__TENANT__
-  replicas: 5
+  replicas: 1
   # We don't care about sequential deploy ordering - just launch pods in parallel
   podManagementPolicy: Parallel
   selector:

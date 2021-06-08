@@ -1,0 +1,45 @@
+# Cluster for launching a bunch of small nodes with avalanche+prometheus.
+# In practice this should get around 200M metrics across 100 avalanches * 10 prometheuses
+# This is meant to be deployed using eksctl. See README.md.
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: nick-18nodes-driver
+  region: eu-west-3
+
+managedNodeGroups:
+
+# 1. avalanche on large number of small nodes
+
+# this fits about four avalanches per node, with five prometheuses running
+# if there are seven prometheuses then four avalanches is too many and there will be evictions
+# (apparently mem usage is somehow proportional to the number of prometheuses querying)
+- name: t3medium
+  instanceType: t3a.medium # 2cpu, 2gmem, 10% discount on AMD CPU
+  # can fit two avalanches per node if there are ten prometheuses polling them
+  # or four avalanches per node if there are only five prometheuses polling them
+  # (avalanche mem usage seems to be proportional to query rate)
+  desiredCapacity: 50
+  volumeSize: 10
+  labels:
+    avalanche: yep # referenced by nodeSelector in avalanche deployment
+
+# 2. prometheus instances on small number of large nodes
+
+# this size is sufficient for <= 75 avalanches:
+#- name: r54xlarge
+#  instanceType: r5a.4xlarge # 16cpu, 128gmem, 10% discount on AMD CPU
+#  desiredCapacity: 5 # can fit one prometheus per node
+#  volumeSize: 10
+#  labels:
+#    prometheus: yep # referenced by nodeSelector in prom deployment
+
+# for >= 100 avalanches, should do this:
+- name: r58xlarge
+  instanceType: r5a.8xlarge # 32cpu, 256gmem, 10% discount on AMD CPU
+  # can fit one prometheus per node, scale this according to the desired number of prometheuses
+  desiredCapacity: 10
+  volumeSize: 10
+  labels:
+    prometheus: yep # referenced by nodeSelector in prom deployment
