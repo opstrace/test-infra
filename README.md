@@ -112,8 +112,3 @@ eksctl scale nodegroup -r us-west-1 --cluster nick-scaletest-driver -n t3medium 
 To delete an eksctl nodegroup: Delete the corresponding CloudFormation stack in the AWS dashboard. The nodes will automatically be decommissioned and any resident pods will be moved off of them
 
 To delete an eksctl cluster: Delete all the CloudFormation stacks for the nodegroups, THEN delete the stack for the cluster. Attempts to delete the cluster before the stacks SHOULD fail.
-
-## See also
-
-- [previous scale test deployments](./old/) copied from old repo [doc](https://github.com/opstrace/opstrace-prelaunch/blob/963d874b781299cab094629967e8156acd5fb0f0/docs/tests/how_to_launch_scale_test.md) and [manifests](https://github.com/opstrace/opstrace-prelaunch/tree/963d874b781299cab094629967e8156acd5fb0f0/test/manifests)
-- [playbook: changing opstrace cluster size](https://docs.google.com/document/d/1wqTE2Evr2sAcfsSxkd7VD4cy8QqjaCnyCYiVoJ4i9gk/edit#heading=h.vf1rp13ok2tl)
