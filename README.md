@@ -1,15 +1,12 @@
-# Benchmark guide
+# Test Infra
 
-How this works:
-- `opstrace` cluster with 9 big nodes (see `opstrace-*.yaml` for configs)
-- eks `driver` cluster with 5 himem nodes for 5 `prometheus` instances, and 25 medium nodes for `avalanche` instances (see `driver-*.yaml` for configs)
-- the `prometheus` instances EACH scrape ALL of the `avalanche` instances, but each prometheus appends its pod name to the labels to ensure that each is treated as a distinct set of data. so the resulting metrics are Nprometheus * Navalanche
-- the `prometheus` instances in the `driver` cluster are configured to `remote_write` to the `opstrace` cluster
+This repository contains configurations used for scale tests. Deploying things is a semi-manual for now, but the configurations should make it easy to build a given environment quickly.
 
-Sample benchmark [scenario](https://github.com/cortexproject/cortex/issues/3753):
-- 9 tenants, each doing around 42M active series
-- overall 381M active series with 6M datapoint/s => 360M datapoint/min (so ~60s between updates)
-- 12 compactors (but Jan 2021 comment in ticket mentions that any given tenant will be assigned a single compactor)
+How the scale tests are organized:
+- `opstrace` cluster to test against, see `opstrace-*.yaml` for configs.
+- EKS `driver` cluster to send test data, with separate nodepools for `prometheus` instances and `avalanche` instances, see `driver-*.yaml` for configs.
+    - The `prometheus` instances EACH scrape ALL of the `avalanche` instances, but each prometheus appends its pod name to the labels to ensure that each is treated as a distinct set of data. So the resulting metrics are Nprometheus * Navalanche.
+    - The `prometheus` instances in the `driver` cluster are configured to `remote_write` to the `opstrace` cluster.
 
 ## Install prerequisites
 
