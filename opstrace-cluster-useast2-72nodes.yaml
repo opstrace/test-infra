@@ -1,4 +1,3 @@
-controller_image: opstrace/controller:latest-main
 tenants:
 - default
 # Opstrace bases compactors by node count:

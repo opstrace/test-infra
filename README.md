@@ -11,13 +11,18 @@ How the scale tests are organized:
 ## Install prerequisites
 
 ```
-curl -L https://opstrace-ci-main-artifacts.s3-us-west-2.amazonaws.com/cli/main/latest/opstrace-cli-linux-amd64-latest.tar.bz2 | tar xjf -
 sudo pacman -S eksctl
 ```
 
 ## Deploy clusters
 
 ### Opstrace cluster
+
+0. Download latest `opstrace` CLI. This ensures we use the latest passing build of Opstrace.
+
+```
+curl -L https://opstrace-ci-main-artifacts.s3-us-west-2.amazonaws.com/cli/main/latest/opstrace-cli-linux-amd64-latest.tar.bz2 | tar xjf -
+```
 
 1. Create cluster in `us-west-2`
 
