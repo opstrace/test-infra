@@ -32,5 +32,5 @@ EOF
 
 for ns in $(kubectl get namespaces -o name | sed 's,namespace/,,g'); do
     echo "Creating 'regcred' secret in namespace $ns"
-    echo "$SECRET_YAML" | kubectl apply -n $ns -
+    echo "$SECRET_YAML" | kubectl apply -n $ns -f -
 done
