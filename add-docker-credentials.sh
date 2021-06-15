@@ -12,12 +12,21 @@ fi
 IFS=$'\n\t'
 
 # namespace:password is b64-encoded within docker auth json
-AUTH_ORIG="$USER:$PASSWORD"
-AUTH_B64=$(echo -n $AUTH_ORIG | base64 -w 0)
-
+AUTH_ORIG="$USER:$PASSWORD"       # ...
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  # Mac OSX uses -b instead of -w and defaults to same as -w
+  AUTH_B64=$(echo -n $AUTH_ORIG | base64)
+else
+  AUTH_B64=$(echo -n $AUTH_ORIG | base64 -w 0)
+fi
 # json is then b64-encoded (again) for the k8s secret
 AUTHS_ORIG="{\"auths\":{\"https://index.docker.io/v2/\":{\"auth\":\"$AUTH_B64\"}}}"
-AUTHS_B64=$(echo -n $AUTHS_ORIG | base64 -w 0)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  # Mac OSX uses -b instead of -w and defaults to same as -w
+  AUTHS_B64=$(echo -n $AUTHS_ORIG | base64)
+else
+  AUTHS_B64=$(echo -n $AUTHS_ORIG | base64 -w 0)
+fi
 
 # omits namespace:
 read -d '' SECRET_YAML <<EOF
