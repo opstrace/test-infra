@@ -16,13 +16,20 @@ data:
       # Here we increase the limits by 100x from the default controller values
       max_global_series_per_user: 1000000000 # controller: 10000000
       max_series_per_user: 500000000 # controller: 5000000
+
       # If we go even further, we start seeing another bottleneck: HTTP 503 errors paired with this distributor error:
       #  ingestion rate limit (100000) exceeded while adding 2000 samples and 0 metadata
       # Here we increase the limit by 100x from the default controller value
       ingestion_rate: 100000000 # controller: 100000, default: 25000
-    # NOTE: DO NOT SET INGESTER LIMITS HERE.
+
+      # With higher cardinality test data (avalanche: --series-count), we also need to increase this limit.
+      max_series_per_metric: 50000000 # default: 50000
+
+      # When testing metrics with LOTS of labels, we need to increase this limits.
+      max_label_names_per_series: 100000 # default: 30 (testing up to 10k, but leaving plenty of headroom with 100k)
+    # NOTE: DO NOT SET INGESTER RUNTIME LIMITS HERE.
     # They will be ignored in favor of the runtime configuration (even if that configuration is empty).
-    # Add any ingester limits to cortex-runtime-config below.
+    # Add any ingester limits to cortex-runtime-config.
 
 ---
 
