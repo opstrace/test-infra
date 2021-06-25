@@ -25,8 +25,23 @@ data:
       # With higher cardinality test data (avalanche: --series-count), we also need to increase this limit.
       max_series_per_metric: 50000000 # default: 50000
 
-      # When testing metrics with LOTS of labels, we need to increase this limits.
-      max_label_names_per_series: 100000 # default: 30 (testing up to 10k, but leaving plenty of headroom with 100k)
+      # When testing metrics with LOTS of labels, we need to increase this limit.
+      max_label_names_per_series: 100000 # default: 30 (testing up to 10k, but leaving plenty of headroom)
+    ingester_client:
+      # When testing metrics with LOTS of labels, we also need to increase this limit.
+      grpc_client_config:
+        max_send_msg_size: 1048576001 # default: 16777216
+        grpc_compression: gzip # default: ""
+    distributor:
+      # At 10k label metrics, this starts to become a bottleneck (e.g. seeing 218MB payloads).
+      max_recv_msg_size: 1048576002 # default: 104857600
+      # Avoid risk of OOMing if the ingesters are falling behind or down
+      instance_limits:
+        max_inflight_push_requests: 10000
+    server:
+      # At 10k label metrics, these (barely) start to become a bottleneck (e.g. seeing 46MB payloads).
+      grpc_server_max_recv_msg_size: 419430401 # default: 41943040
+      grpc_server_max_send_msg_size: 419430402 # default: 41943040
     # NOTE: DO NOT SET INGESTER RUNTIME LIMITS HERE.
     # They will be ignored in favor of the runtime configuration (even if that configuration is empty).
     # Add any ingester limits to cortex-runtime-config.
@@ -59,4 +74,4 @@ data:
       #    sum(cortex_inflight_requests{route="/cortex.Ingester/Push",service="ingester"}) by (pod)
       # Can validate that this setting is actually working by checking config metrics:
       #    max(cortex_ingester_instance_limits{limit="max_inflight_push_requests"}) by (pod)
-      max_inflight_push_requests: 20000 # controller: unset, default: 0/unlimited
+      max_inflight_push_requests: 10000 # controller: unset, default: 0/unlimited
