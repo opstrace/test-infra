@@ -53,7 +53,24 @@ eksctl create cluster -f ./driver-eksctl-PICKONE.yaml
 
 If there are problems, take a look at the CloudFormation dashboard first - eksctl is a thin veneer over some CF templates
 
-## Start testing
+## Start testing (looker)
+
+In the test we have N looker instances writing directly to Opstrace.
+
+The `looker` pods are deployed as a `StatefulSet` only to have stable pod names, so that metric labels do not change if the looker pods are restarted, reconfigured, or evicted. For example a mass eviction can lead to an unexpected increase in distinct series labels, because the looker pod name is included in the series.
+
+1. Deploy [looker](https://github.com/opstrace/opstrace/tree/main/test/test-remote/containers/looker) instances into driver cluster.
+
+```
+CLUSTER_NAME=ship
+TENANT=staging
+sed "s/__AUTH_TOKEN__/$(cat tenant-api-token-$TENANT)/g" ./driver-looker.template.yaml | \
+  sed "s/__CLUSTER_NAME__/$CLUSTER_NAME/g" | \
+  sed "s/__TENANT__/$TENANT/g" | \
+  kubectl apply -f -
+```
+
+## Start testing (avalanche)
 
 In the test we have N avalanche instances being polled by M prometheus instances.
 

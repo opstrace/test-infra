@@ -1,0 +1,80 @@
+# Looker docs: https://github.com/opstrace/opstrace/tree/main/test/test-remote/containers/looker
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tenant-auth-__TENANT__
+stringData:
+  token: '__AUTH_TOKEN__'
+---
+# We use a StatefulSet solely in order for the pod name to stay constant.
+# This avoids creating a new set of metric series in the test data if the pod is restarted or evicted.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: looker-__TENANT__
+spec:
+  serviceName: looker-__TENANT__
+  replicas: 50
+  # We don't care about sequential deploy ordering - just launch pods in parallel
+  # (Note: no maxUnavailable for StatefulSet config changes yet, see https://github.com/kubernetes/kubernetes/pull/82162 )
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      name: looker
+  template:
+    metadata:
+      labels:
+        name: looker
+    spec:
+      containers:
+      - name: looker
+        image: opstrace/looker:8878e85e-dev # with https://github.com/opstrace/opstrace/pull/995
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -c
+        # invocation-id: Use stable value for series names/labels - across pod restarts
+        # n-concurrent-streams: Number of distinct series per instance
+        # n-entries-per-stream-fragment: Number of sample points to get from each stream when polling streams
+        # n-fragments-per-push-message: Size of chunks to send as separate Push calls, keep reasonable or else Cortex will reject
+        # stream-write-n-seconds: Arbitrarily large value to keep running for a long time
+        # metrics-time-increment-ms: How wide each fragment should be in milliseconds
+        # change-streams-every-n-cycles: Keep metric names/labels constant across the run
+        # metrics-past-start-range-min/max-seconds: Start fragments at a fixed 10m10s ago (vs wall clock time).
+        #                                           There's currently a 10min age requirement where looker will pause if it gets too close.
+        # NOTE: n-entries-per-stream-fragment * metrics-time-increment-ms must be a multiple of 1000
+        - >-
+          looker https://cortex.${TENANT}.${CLUSTER_NAME}.opstrace.io
+          --log-level debug
+          --metrics-mode
+          --bearer-token-file /var/run/tenant-auth/token
+          --skip-read
+          --invocation-id ${POD_NAME}
+          --n-concurrent-streams 100000
+          --n-entries-per-stream-fragment 10
+          --n-fragments-per-push-message 5000
+          --stream-write-n-seconds 9999999
+          --metrics-time-increment-ms 100
+          --change-streams-every-n-cycles 0
+          --metrics-past-start-range-min-seconds 610
+          --metrics-past-start-range-max-seconds 610
+        env:
+        - name: CLUSTER_NAME
+          value: __CLUSTER_NAME__
+        - name: TENANT
+          value: __TENANT__
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          requests:
+            memory: 500Mi # no idea what a good number is, just want to set a cap that doesn't OOM
+        volumeMounts:
+        - name: tenant-auth
+          mountPath: /var/run/tenant-auth
+          readOnly: true
+      volumes:
+      - name: tenant-auth
+        secret:
+          secretName: tenant-auth-__TENANT__
