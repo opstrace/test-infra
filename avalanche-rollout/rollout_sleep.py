@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -u
+# -u: Disable stdout buffering, otherwise "kubectl logs" will show nothing
 
 # Copyright 2021 Opstrace, Inc.
 #
@@ -71,7 +72,7 @@ if replicas <= pod_index:
             replicas, pod_name
         )
     )
-print("Pod: {} => {} of {}".format(pod_name, pod_index, replicas))
+print("Pod: {} => ordinal {} of {}".format(pod_name, pod_index, replicas))
 
 # figure out when our pod is expected to next restart, relative to current time
 now_time = math.floor(time.time())
