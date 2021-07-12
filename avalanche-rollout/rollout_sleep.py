@@ -40,7 +40,7 @@ def getenv_int(env_name):
     try:
         return int(value)
     except:
-        raise Exception("Expected {} to be an integer: {}".format(env_name, replicas))
+        raise Exception("Expected {} to be an integer: {}".format(env_name, value))
 
 
 # determine the pod index (expecting it to be in a StatefulSet)
