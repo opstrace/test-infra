@@ -49,16 +49,28 @@ if not pod_name:
     raise Exception("Missing POD_NAME environment variable")
 pod_index_match = re.match(r"^.+-([0-9]+)$", pod_name)
 if not pod_index_match:
-    raise Exception("Expected POD_NAME to end in '-[0-9]+', is this a StatefulSet?: {}".format(pod_name))
+    raise Exception(
+        "Expected POD_NAME to end in '-[0-9]+', is this a StatefulSet?: {}".format(
+            pod_name
+        )
+    )
 pod_index = int(pod_index_match.group(1))
 
 # among REPLICAS pods, we want one pod to restart every STAGGER_MINS
 replicas = getenv_int("REPLICAS")
 stagger_secs = 60 * getenv_int("STAGGER_MINS")
 if replicas <= 0 or stagger_secs <= 0:
-    raise Exception("REPLICAS={} and STAGGER_MINS={} must be greater than 0".format(replicas, stagger_secs / 60))
+    raise Exception(
+        "REPLICAS={} and STAGGER_MINS={} must be greater than 0".format(
+            replicas, stagger_secs / 60
+        )
+    )
 if replicas <= pod_index:
-    raise Exception("REPLICAS={} must be larger than index in POD_NAME={}".format(replicas, pod_name))
+    raise Exception(
+        "REPLICAS={} must be larger than index in POD_NAME={}".format(
+            replicas, pod_name
+        )
+    )
 print("Pod: {} => {} of {}".format(pod_name, pod_index, replicas))
 
 # figure out when our pod is expected to next restart, relative to current time
@@ -80,10 +92,21 @@ pod_start_secs = math.floor(pod_index * rollout_duration_secs / replicas)
 pod_start_time = rollout_start_time + pod_start_secs
 if pod_start_time < now_time:
     # pod start time is in the past for this cycle, so skip forward to next cycle
-    print("Too-early rollout of {} pods starts at: {}, with pod {} starting at: {}".format(replicas, time.ctime(rollout_start_time), pod_index, time.ctime(pod_start_time)))
+    print(
+        "Too-early rollout of {} pods starts at: {}, with pod {} starting at: {}".format(
+            replicas,
+            time.ctime(rollout_start_time),
+            pod_index,
+            time.ctime(pod_start_time),
+        )
+    )
     rollout_start_time += rollout_duration_secs
     pod_start_time += rollout_duration_secs
-print("Matching rollout of {} pods starts at: {}, with pod {} starting at: {}".format(replicas, time.ctime(rollout_start_time), pod_index, time.ctime(pod_start_time)))
+print(
+    "Matching rollout of {} pods starts at: {}, with pod {} starting at: {}".format(
+        replicas, time.ctime(rollout_start_time), pod_index, time.ctime(pod_start_time)
+    )
+)
 
 sleep_secs = pod_start_time - now_time
 if os.getenv("DRY_RUN"):
